@@ -9,6 +9,7 @@
 declare type localStorageDB_callback<T> = (object: T) => localStorageDB_dynamicFields;
 declare type localStorageDB_callbackFilter<T> = (object: T) => boolean;
 
+
 declare class localStorageDB<T = unknown> {
     constructor(database_name: string, storage_engine?: Storage); // Constructor: storage_engine can either be localStorage (default) or sessionStorage
     isNew(): boolean; // Returns true if a database was created at the time of initialisation with the constructor
@@ -19,32 +20,32 @@ declare class localStorageDB<T = unknown> {
     tableCount(): number; // Returns the number of tables in a database
     commit(): boolean; // Commits the database to localStorage. Returns true if successful, and false otherwise (highly unlikely)
     serialize(): string; // Returns the entire database as serialized JSON
-    tableExists<TKey extends keyof T>(table: TKey | [TKey]): boolean; // Checks whether a table exists in the database
-    tableFields<TKey extends keyof T>(table: TKey | [TKey]): string[]; // Returns the list of fields of a table
-    createTable<TKey extends keyof T>(table: TKey | [TKey], fields: string[]); // Creates a table - fields is an array of string fieldnames. 'ID' is a reserved fieldname.
-    createTableWithData<TKey extends keyof T>(table: TKey | [TKey], rows: { [T: string]: any }[]);
+    tableExists<TKey extends keyof T>(table: TKey): boolean; // Checks whether a table exists in the database
+    tableFields<TKey extends keyof T>(table: TKey): string[]; // Returns the list of fields of a table
+    createTable<TKey extends keyof T, TKey2 extends keyof T[TKey]>(table: TKey, fields: string[]); // Creates a table - fields is an array of string fieldnames. 'ID' is a reserved fieldname.
+    createTableWithData<TKey extends keyof T>(table: TKey, rows: { [P in keyof T[TKey][number]]: any }[]);
 	/*
 	 Creates a table and populates it
 	 rows is an array of object literals where each object represents a record
 	 [{field1: val, field2: val}, {field1: val, field2: val}]
 	 */
-    alterTable<TKey extends keyof T>(table: TKey | [TKey], new_fields: string[] | string, default_values: localStorageDB_dynamicFields | string);
+    alterTable<TKey extends keyof T>(table: TKey, new_fields: string[] | string, default_values: localStorageDB_dynamicFields | string);
 	/*
 	 Alter a table
 	 - new_fields can be a array of columns OR a string of single column.
 	 - default_values (optional) can be a object of column's default values OR a default value string for single column for existing rows.
 	 */
-    dropTable<TKey extends keyof T>(table: TKey | [TKey]): void; // Deletes a table from the database
-    truncate<TKey extends keyof T>(table: TKey | [TKey]): void; // Empties all records in a table and resets the internal auto increment ID to 0
-    columnExists<TKey extends keyof T>(table: TKey | [TKey], field: string): boolean; // Checks whether a column exists in database table.
-    rowCount<TKey extends keyof T>(table: TKey | [TKey]): number; // Returns the number of rows in a table
-    insert<TKey extends keyof T>(table: TKey | [TKey], data: { [T: string]: any }): number;
+    dropTable<TKey extends keyof T>(table: TKey): void; // Deletes a table from the database
+    truncate<TKey extends keyof T>(table: TKey): void; // Empties all records in a table and resets the internal auto increment ID to 0
+    columnExists<TKey extends keyof T>(table: TKey, field: string): boolean; // Checks whether a column exists in database table.
+    rowCount<TKey extends keyof T>(table: TKey): number; // Returns the number of rows in a table
+    insert<TKey extends keyof T>(table: TKey, data: { [P in keyof T[TKey][number]]: any }): number;
 	/*
 	 Inserts a row into a table and returns its numerical ID
 	 - data is an object literal with field-values
 	 every row is assigned an auto-incremented numerical ID automatically
 	 */
-    query<TKey extends keyof T>(table: TKey | [TKey], query?: { [T: string]: any }, limit?: number, start?: number, sort?: any): Exclude<T[TKey], undefined>;
+    query<TKey extends keyof T>(table: TKey, query?: { [P in keyof T[TKey][number]]: any }, limit?: number, start?: number, sort?: any): Exclude<T[TKey], undefined>;
 	/* DEPRECATED
 	 Returns an array of rows (object literals) from a table matching the query.
 	 - query is either an object literal or null. If query is not supplied, all rows are returned
@@ -54,7 +55,7 @@ declare class localStorageDB<T = unknown> {
 	 - distinct is an array of fields whose values have to be unique in the returned rows
 	 Every returned row will have it's internal auto-incremented id assigned to the variable ID
 	 */
-    queryAll<TKey extends keyof T>(table: TKey | [TKey], params?: localStorageDB_queryParams<T[TKey]>): Exclude<T[TKey], undefined>;
+    queryAll<TKey extends keyof T>(table: TKey, params?: localStorageDB_queryParams<T[TKey]>): Exclude<T[TKey], undefined>;
 	/*
 	 Returns an array of rows (object literals) from a table matching the query.
 	 - query is either an object literal or null. If query is not supplied, all rows are returned
@@ -64,21 +65,21 @@ declare class localStorageDB<T = unknown> {
 	 - distinct is an array of fields whose values have to be unique in the returned rows
 	 Every returned row will have it's internal auto-incremented id assigned to the variable ID
 	 */
-    update<TKey extends keyof T, TKey2 extends keyof T[TKey]>(table: TKey | [TKey], query: localStorageDB_dynamicFields<T[TKey]> | localStorageDB_callbackFilter<T[TKey][0]>, update?: localStorageDB_callback<T[TKey][0]>): number;
+    update<TKey extends keyof T>(table: TKey, query: localStorageDB_dynamicFields<T[TKey]> | localStorageDB_callbackFilter<T[TKey][number]>, update?: localStorageDB_callback<T[TKey][number]>): number;
 
 	/*
 	 Updates existing records in a table matching query, and returns the number of rows affected
 	 - query is an object literal or a function. If query is not supplied, all rows are updated
 	 - update_function is a function that returns an object literal with the updated values
 	 */
-    insertOrUpdate<TKey extends keyof T>(table: TKey | [TKey], query: localStorageDB_dynamicFields<T[TKey]> | localStorageDB_callbackFilter<T[TKey][0]>, data: localStorageDB_fields<T[TKey][0]>): number;
+    insertOrUpdate<TKey extends keyof T>(table: TKey, query: localStorageDB_dynamicFields<T[TKey]> | localStorageDB_callbackFilter<T[TKey][number]>, data: localStorageDB_fields<T[TKey][number]>): number;
 	/*
 	 Inserts a row into a table if the given query matches no results, or updates the rows matching the query.
 	 - query is either an object literal, function, or null.
 	 - data is an object literal with field-values
 	 Returns the numerical ID if a new row was inserted, or an array of IDs if rows were updated
 	 */
-    deleteRows<TKey extends keyof T>(table: TKey | [TKey], query: localStorageDB_dynamicFields<T[TKey]> | localStorageDB_callbackFilter<T[TKey][0]>): number;
+    deleteRows<TKey extends keyof T>(table: TKey, query: localStorageDB_dynamicFields<T[TKey]> | localStorageDB_callbackFilter<T[TKey][number]>): number;
 	/*
 	 Deletes rows from a table matching query, and returns the number of rows deleted
 	 - query is either an object literal or a function. If query is not supplied, all rows are deleted
