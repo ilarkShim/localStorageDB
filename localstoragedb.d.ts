@@ -54,7 +54,7 @@ declare class localStorageDB {
 	 - distinct is an array of fields whose values have to be unique in the returned rows
 	 Every returned row will have it's internal auto-incremented id assigned to the variable ID
 	 */
-    queryAll(table: string, params: localStorageDB_queryParams): localStorageDB_fields[];
+    queryAll(table: string, params?: localStorageDB_queryParams): localStorageDB_fields[];
 	/*
 	 Returns an array of rows (object literals) from a table matching the query.
 	 - query is either an object literal or null. If query is not supplied, all rows are returned
